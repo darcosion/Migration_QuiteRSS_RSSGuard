@@ -14,8 +14,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     #firstly, we backup the database : 
-    #print("RSS Guard backup")
-    #shutil.copyfile(args.guarddb, args.guarddb+".backup")
+    print("RSS Guard backup")
+    shutil.copyfile(args.guarddb, args.guarddb+".backup")
 
     #here we open the sqlite3 db of RSS Guard
     condest = sqlite3.connect(args.guarddb)
