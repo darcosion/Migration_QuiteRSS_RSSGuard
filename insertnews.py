@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     #firstly, we backup the database : 
     print("RSS Guard backup")
-    shutil.copyfile(args.guarddb, args.guarddb+".backup")
+    shutil.copyfile(args.guarddb, args.guarddb+".quitebackup")
 
     #here we open the sqlite3 db of RSS Guard
     condest = sqlite3.connect(args.guarddb)
@@ -40,39 +40,47 @@ if __name__ == "__main__":
     #we start by extracting categories : 
     print("copy categories")
     categoriesrows = con.execute("SELECT id, text, title, parentId FROM feeds WHERE xmlUrl IS NULL")
-    ordr = 1
+    ordrdict = dict()
     for row in categoriesrows:
+        if(row[3] not in ordrdict.keys()):
+            ordrdict[row[3]] = 0
+        else:
+            ordrdict[row[3]] += 1
         try:
             querytext = """INSERT INTO "Categories"
                         ("id", "parent_id", "title", "description", "account_id", "ordr")
                         VALUES (?, ?, ?, ?, ?, ?);"""
             if(int(row[3]) == 0):
-                condest.execute(querytext, (row[0], -1, row[1], row[2], account_id, ordr))
+                condest.execute(querytext, (row[0], -1, row[1], row[2], account_id, ordrdict[row[3]]))
             else:
-                condest.execute(querytext, (row[0], row[3], row[1], row[2], account_id, ordr))
+                condest.execute(querytext, (row[0], row[3], row[1], row[2], account_id, ordrdict[row[3]]))
             
         except Exception as e:
             print(e)
             exit()
-        ordr += 1
-
+    
+    print(ordrdict)
     # we continue by extracting feeds
     print("copy feeds")
     feedsrows = con.execute("SELECT id, text, title, parentId, xmlUrl, Image FROM feeds WHERE xmlUrl IS NOT NULL")
     for row in feedsrows:
+        if(row[3] not in ordrdict.keys()):
+            ordrdict[row[3]] = 0
+        else:
+            ordrdict[row[3]] += 1
         try:
             querytext = """INSERT INTO "main"."Feeds"
                             ("id", "ordr", "title", "description", "category", "source", "update_type", "account_id", "custom_id")
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);"""
             if(int(row[3]) == 0):
-                condest.execute(querytext, (row[0], ordr, row[1], row[2], -1, row[4], 1, account_id, row[0]))
+                condest.execute(querytext, (row[0], ordrdict[row[3]], row[1], row[2], -1, row[4], 1, account_id, row[0]))
             else:
-                condest.execute(querytext, (row[0], ordr, row[1], row[2], row[3], row[4], 1, account_id, row[0]))
+                condest.execute(querytext, (row[0], ordrdict[row[3]], row[1], row[2], row[3], row[4], 1, account_id, row[0]))
             
         except Exception as e:
             print(e)
             exit()
-        ordr += 1
+    print(ordrdict)
 
     condest.commit()
     ## secondly we gather how many query we need to do : 
@@ -84,7 +92,7 @@ if __name__ == "__main__":
     # we loop until we have the whole news database
     print("copy news")
     while(steprows < countrows):
-        rowsquery = "SELECT feedId, title, link_href, author_name, description, published, deleted FROM news LIMIT 500 OFFSET {};".format(steprows)
+        rowsquery = "SELECT feedId, title, link_href, author_name, description, published, deleted, guid FROM news LIMIT 500 OFFSET {};".format(steprows)
         print(rowsquery)
         rows = con.execute(rowsquery)
         for row in rows:
@@ -130,18 +138,18 @@ if __name__ == "__main__":
                     '[]', 
                     0, 
                     ?, 
-                    '', 
+                    ?, 
                     '', 
                     '.')"""
                 if(row[1] == ''):
-                    condest.execute(querytext, (row[0], "no title", row[2], row[3], timestamp, row[4], account_id))
+                    condest.execute(querytext, (row[0], "no title", row[2], row[3], timestamp, row[4], account_id, row[7]))
                 else:
-                    condest.execute(querytext, (row[0], row[1], row[2], row[3], timestamp, row[4], account_id))
+                    condest.execute(querytext, (row[0], row[1], row[2], row[3], timestamp, row[4], account_id, row[7]))
 
             except Exception as e:
                 print(e)
                 print(querytext)
-                print((row[0], row[1], row[2], row[3],row[5], row[4],))
+                print((row[0], row[1], row[2], row[3], timestamp, row[4], account_id, row[7]))
                 exit()
             
         steprows += 500
