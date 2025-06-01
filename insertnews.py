@@ -110,7 +110,7 @@ if __name__ == "__main__":
                 if timestamp.year <= 1971:  
                     timestamp = time.time()
                 else:
-                    timestamp = timestamp.timestamp()
+                    timestamp = timestamp.timestamp()*1000
                 querytext = """INSERT INTO Messages 
                     ("is_read", "is_important", "is_deleted", "is_pdeleted", 
                     "feed", 
