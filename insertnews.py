@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import shutil, argparse, csv, sqlite3
+import shutil, argparse, sqlite3
 from dateutil.parser import parse as catdateparse
 import time 
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
            print(i)
         account_id = int(input("write here the number corresponding to your std-rss"))
     else:
-        account_id = condest.execute("SELECT id FROM Accounts WHERE type IS 'std-rss'").fetchone()[0]
+        account_id = condest.execute("SELECT id FROM Accounts WHERE type IS 'std-rss' : ").fetchone()[0]
 
     ## firstly, we will import feeds from QuiteRSS and convert them to categories and feeds
 
