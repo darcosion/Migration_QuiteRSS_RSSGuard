@@ -170,7 +170,6 @@ if __name__ == "__main__":
                 exit()
             
         steprows += 500
-        break
     
     print("end of insert, start commiting")
     condest.commit()
