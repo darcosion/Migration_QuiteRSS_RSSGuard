@@ -8,6 +8,8 @@ QuiteRSS is a great RSS aggregator, but seem to be currently unmaintained. RSS G
 Categories, Feeds and News, the news are the longest part because QuiteRSS could have a big history if configured to keep all news.
 
 **If your QuiteRSS is configured to flush old news, please don't use this script, instead export your feeds list in OPML format and import it to RSS Guard, it works better.**
+  
+**And if you want to merge a QuiteRSS to an Existing RSS Guard, please, use insertnews1.py instead, and use another RSS account on RSS Guard to prevent colisions**
 
 ## How to use
 
