@@ -72,7 +72,7 @@ if __name__ == "__main__":
     print(ordrdict)
     # we continue by extracting feeds
     print("copy feeds")
-    feedsrows = con.execute("SELECT id, text, title, parentId, xmlUrl, Image FROM feeds WHERE xmlUrl IS NOT NULL")
+    feedsrows = con.execute("SELECT id, text, title, parentId, xmlUrl, disableUpdate FROM feeds WHERE xmlUrl IS NOT NULL")
     # we extract the count of feeds from RSS Guard and use it
     countguardfeed = int(condest.execute("SELECT MAX(id) FROM Feeds").fetchone()[0])
     print(countguardfeed)
@@ -86,12 +86,12 @@ if __name__ == "__main__":
             ordrdict[row[3]] += 1
         try:
             querytext = """INSERT INTO "main"."Feeds"
-                            ("id", "ordr", "title", "description", "category", "source", "update_type", "account_id", "custom_id")
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);"""
+                            ("id", "ordr", "title", "description", "category", "source", "update_type", "is_off", "account_id", "custom_id")
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
             if(int(row[3]) == 0):
-                condest.execute(querytext, (countguardfeed, ordrdict[row[3]], row[1], row[2], -1, row[4], 1, account_id, countguardfeed))
+                condest.execute(querytext, (countguardfeed, ordrdict[row[3]], row[1], row[2], -1, row[4], 1, row[5], account_id, countguardfeed))
             else:
-                condest.execute(querytext, (countguardfeed, ordrdict[row[3]], row[1], row[2], transpositioncat[row[3]], row[4], 1, account_id, countguardfeed))
+                condest.execute(querytext, (countguardfeed, ordrdict[row[3]], row[1], row[2], transpositioncat[row[3]], row[4], 1, row[5], account_id, countguardfeed))
             
         except Exception as e:
             print(repr(e))

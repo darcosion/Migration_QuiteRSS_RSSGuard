@@ -33,7 +33,7 @@ if __name__ == "__main__":
            print(i)
         account_id = int(input("write here the number corresponding to your std-rss"))
     else:
-        account_id = condest.execute("SELECT id FROM Accounts WHERE type IS 'std-rss' : ").fetchone()[0]
+        account_id = condest.execute("SELECT id FROM Accounts WHERE type IS 'std-rss'").fetchone()[0]
 
     ## firstly, we will import feeds from QuiteRSS and convert them to categories and feeds
 
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     print(ordrdict)
     # we continue by extracting feeds
     print("copy feeds")
-    feedsrows = con.execute("SELECT id, text, title, parentId, xmlUrl, Image FROM feeds WHERE xmlUrl IS NOT NULL")
+    feedsrows = con.execute("SELECT id, text, title, parentId, xmlUrl, disableUpdate FROM feeds WHERE xmlUrl IS NOT NULL")
     for row in feedsrows:
         if(row[3] not in ordrdict.keys()):
             ordrdict[row[3]] = 0
@@ -70,12 +70,12 @@ if __name__ == "__main__":
             ordrdict[row[3]] += 1
         try:
             querytext = """INSERT INTO "main"."Feeds"
-                            ("id", "ordr", "title", "description", "category", "source", "update_type", "account_id", "custom_id")
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);"""
+                            ("id", "ordr", "title", "description", "category", "source", "update_type", "is_off", "account_id", "custom_id")
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
             if(int(row[3]) == 0):
-                condest.execute(querytext, (row[0], ordrdict[row[3]], row[1], row[2], -1, row[4], 1, account_id, row[0]))
+                condest.execute(querytext, (row[0], ordrdict[row[3]], row[1], row[2], -1, row[4], 1, row[5], account_id, row[0]))
             else:
-                condest.execute(querytext, (row[0], ordrdict[row[3]], row[1], row[2], row[3], row[4], 1, account_id, row[0]))
+                condest.execute(querytext, (row[0], ordrdict[row[3]], row[1], row[2], row[3], row[4], 1, row[5], account_id, row[0]))
             
         except Exception as e:
             print(e)
@@ -125,7 +125,7 @@ if __name__ == "__main__":
                     "custom_id", 
                     "custom_hash", 
                     "labels") VALUES (
-                    0, 
+                    1, 
                     0, 
                     0, 
                     0, 
