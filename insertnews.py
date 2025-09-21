@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import shutil, argparse, sqlite3
-from dateutil.parser import parse as catdateparse
-import time 
+from datetime import datetime, timezone, timedelta
+
 
 if __name__ == "__main__":
     print("Welcom to my news history migration script from QuiteRSS to RSSGuard")
@@ -91,74 +91,85 @@ if __name__ == "__main__":
 
     # we loop until we have the whole news database
     print("copy news")
-    while(steprows < countrows):
-        rowsquery = "SELECT feedId, title, link_href, author_name, description, published, deleted, guid FROM news LIMIT 500 OFFSET {};".format(steprows)
-        print(rowsquery)
-        rows = con.execute(rowsquery)
-        for row in rows:
-            # here, we inject QuiteRSS news on RSS Guard Messages
-
-            # first if the article is deleted, we don't insert it
-            if(int(row[6]) == 1):
-                #print("row {} with title {} deleted, so not imported".format(row[0], row[1]))
-                continue
-            
-            # else, we try to insert the article
-            try:
-                #here, we convert timestamp
-                timestamp = catdateparse(row[5])
-                if timestamp.year <= 1971:  
-                    timestamp = time.time()
-                else:
-                    timestamp = timestamp.timestamp()*1000
-                querytext = """INSERT INTO Messages 
-                    ("is_read", "is_important", "is_deleted", "is_pdeleted", 
-                    "feed", 
-                    "title", 
-                    "url", 
-                    "author", 
-                    "date_created", 
-                    "contents", 
-                    "enclosures", 
-                    "score", 
-                    "account_id", 
-                    "custom_id", 
-                    "custom_hash", 
-                    "labels") VALUES (
-                    1, 
-                    0, 
-                    0, 
-                    0, 
-                    ?, 
-                    ?, 
-                    ?, 
-                    ?, 
-                    ?,
-                    ?, 
-                    '[]', 
-                    0, 
-                    ?, 
-                    ?, 
-                    '', 
-                    '.')"""
-                if(row[1] == ''):
-                    condest.execute(querytext, (row[0], "no title", row[2], row[3], timestamp, row[4], account_id, row[7]))
-                else:
-                    condest.execute(querytext, (row[0], row[1], row[2], row[3], timestamp, row[4], account_id, row[7]))
-
-            except Exception as e:
-                print(e)
-                print(querytext)
-                print((row[0], row[1], row[2], row[3], timestamp, row[4], account_id, row[7]))
-                exit()
-            
-        steprows += 500
     
-    print("end of insert, start commiting")
+    
+    # news from QuiteRSS: feedId, title, link_href, guid, description, published, author_name, read, starred, deleted
+
+    # Messages from RSSGuard: feed, title, url, custom_id, contents, date_created (timestamp), author, is_read, is_important, is_deleted, is_pdeleted
+    
+    # read = 0 --> is_read == 0
+    # read = 2 --> is_read == 1
+    # starred = 0 --> is_important = 0
+    # starred = 1 --> is_important = 1
+    # deleted = 0 --> is_deleted = 0
+    # deleted = 1 --> is_pdeleted = 1
+    # deleted = 2 --> is_deleted = 1
+
+
+    # Connect to the first SQLite database
+    cursor1 = con.cursor()
+    
+    # Connect to the second SQLite database
+    cursor2 = condest.cursor()
+    
+    # Define the SELECT query to retrieve the desired columns from the first table
+    select_query = """
+    SELECT feedId, title, link_href, guid, description, published, author_name, read, starred, deleted
+    FROM news
+    """
+    
+    # Execute the SELECT query
+    cursor1.execute(select_query)
+    rows = cursor1.fetchall()
+    
+   
+    # Define the INSERT query to insert the retrieved data into the second table
+    insert_query = """
+    INSERT INTO Messages (is_read, is_important, is_deleted, is_pdeleted, feed, title, url, author, date_created, contents, enclosures, score, account_id, custom_id, custom_hash, labels )
+
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
+    
+    # Specify your desired timezone offset
+    timezone_offset = 0  # Replace with your desired offset in hours
+    desired_timezone = timezone(timedelta(hours=timezone_offset))
+        
+    # Transform the published column values to UNIX timestamps and create a list of tuples
+    transformed_rows = [
+        (
+            1 if row[7] == 2 else 1 if row[9] == 2 else 0,
+            1 if row[8] == 1 else 0,
+            # 1 if row[9] == 2 else 0,
+            0,
+            1 if row[9] == 1 else 0,
+            row[0],
+            row[1] if row[1] !="" else "No Title",
+            row[2],
+            row[6],
+            0 if row[5] == "0001-01-01T00:00:00" else 1000*int(datetime.fromisoformat(row[5]).replace(tzinfo=desired_timezone).timestamp()),
+            row[4],
+            '[]',
+            0,
+            1,
+            row[3],
+            "",
+            "."
+        )
+        for row in rows
+    ]
+    
+    # Insert the transformed data into the second table
+    cursor2.executemany(insert_query, transformed_rows)
+
+    # Commit the transaction
     condest.commit()
-    print("end of commit, closing database connexion")
+    
+    # Close the connections
+    cursor1.close()
     con.close()
+    cursor2.close()
     condest.close()
+
     
 else:
     print("this is a CLI tool, please use it on a proper shell")
