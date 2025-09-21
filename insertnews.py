@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import shutil, argparse, sqlite3
-from datetime import datetime
-# from dateutil.parser import parse as catdateparse
-# import time 
+from datetime import datetime, timezone, timedelta
+
 
 if __name__ == "__main__":
     print("Welcom to my news history migration script from QuiteRSS to RSSGuard")
@@ -131,20 +130,23 @@ if __name__ == "__main__":
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
     
-    
-    
+    # Specify your desired timezone offset
+    timezone_offset = 0  # Replace with your desired offset in hours
+    desired_timezone = timezone(timedelta(hours=timezone_offset))
+        
     # Transform the published column values to UNIX timestamps and create a list of tuples
     transformed_rows = [
         (
-            1 if row[7] == 2 else 0,
+            1 if row[7] == 2 else 1 if row[9] == 2 else 0,
             1 if row[8] == 1 else 0,
-            1 if row[9] == 2 else 0,
+            # 1 if row[9] == 2 else 0,
+            0,
             1 if row[9] == 1 else 0,
             row[0],
             row[1] if row[1] !="" else "No Title",
             row[2],
             row[6],
-            0 if row[5] == "0001-01-01T00:00:00" else int(datetime.fromisoformat(row[5]).timestamp()),
+            0 if row[5] == "0001-01-01T00:00:00" else 1000*int(datetime.fromisoformat(row[5]).replace(tzinfo=desired_timezone).timestamp()),
             row[4],
             '[]',
             0,
